@@ -32,6 +32,7 @@ public class Main {
                 System.out.print("\n The name of the key is " + myValue.key());
                 System.out.print("\n The object is " + calKb(myValue.size()) + " KBs");
                 System.out.print("\n The owner is " + myValue.owner());
+                System.out.print("\n");
             }
 
         } catch (S3Exception e) {
