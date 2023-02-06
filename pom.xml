@@ -14,21 +14,24 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <exec.cleanupDaemonThreads>false</exec.cleanupDaemonThreads>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <mainClass>org.example.Main</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
+      <build>
+  <plugins>
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+       <version>3.1.0</version>
+      <configuration>
+        <mainClass>org.example.Main</mainClass>
+      </configuration>
+    </plugin>
+  </plugins>
+  </build>
     <dependencies>
+        <dependency>
+            <groupId>software.amazon.awssdk.crt</groupId>
+            <artifactId>aws-crt</artifactId>
+            <version>0.21.5</version>
+        </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>regions</artifactId>
