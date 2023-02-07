@@ -7,8 +7,14 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.model.CompletedFileUpload;
+import software.amazon.awssdk.transfer.s3.model.FileUpload;
+import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
+import software.amazon.awssdk.transfer.s3.progress.LoggingTransferListener;
 
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
@@ -18,25 +24,49 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Hello s3!");
         ResourceBundle rb = ResourceBundle.getBundle("app");
-
-        listBucketObjects(
-                rb.getString("accessKey"),
-                rb.getString("secretKey"),
-                rb.getString("endPointUrl"),
-                rb.getString("bucketName")
-        );
-    }
-
-    public static void listBucketObjects(String accessKey, String secretKey, String endPointUrl, String bucketName) {
-
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(rb.getString("accessKey"), rb.getString("secretKey"));
         try {
-            AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
-            S3AsyncClient s3AsyncClient = S3AsyncClient.crtBuilder()
+            S3AsyncClient s3AsyncClient = S3AsyncClient.builder()
                     .region(Region.AP_NORTHEAST_1)
-                    .endpointOverride(new URI(endPointUrl))
+                    .endpointOverride(new URI(rb.getString("endPointUrl")))
+                    .forcePathStyle(true)
                     .credentialsProvider(StaticCredentialsProvider.create(credentials))
                     .build();
+            String bucketName = rb.getString("bucketName");
+            String dstPath = rb.getString("dstPath");
+            String srcPath = rb.getString("srcPath");
+            listBucketObjects(
+                    s3AsyncClient,
+                    bucketName
+            );
+            S3TransferManager transferManager = S3TransferManager.builder()
+                    .s3Client(s3AsyncClient)
+                    .build();
+            uploadFile(transferManager, bucketName, dstPath, srcPath);
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+    }
 
+    public static String uploadFile(S3TransferManager transferManager, String bucketName,
+                             String key, String filePath) {
+        UploadFileRequest uploadFileRequest =
+                UploadFileRequest.builder()
+                        .putObjectRequest(b -> b.bucket(bucketName).key(key))
+                        .addTransferListener(LoggingTransferListener.create())
+                        .source(Paths.get(filePath))
+                        .build();
+
+        FileUpload fileUpload = transferManager.uploadFile(uploadFileRequest);
+
+        CompletedFileUpload uploadResult = fileUpload.completionFuture().join();
+        return uploadResult.response().eTag();
+    }
+
+    public static void listBucketObjects(S3AsyncClient s3AsyncClient, String bucketName) {
+
+        try {
             ListObjectsRequest listObjects = ListObjectsRequest
                     .builder()
                     .bucket(bucketName)
